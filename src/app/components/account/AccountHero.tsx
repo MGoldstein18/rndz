@@ -54,6 +54,7 @@ export default function AccountHero() {
   const [balance, setBalance] = useState("");
   const [localBalance, setLocalBalance] = useState<number>(0);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+  const [numberOfTransactions, setNumberOfTransactions] = useState<number>(0);
 
   const toast = useToast();
 
@@ -103,6 +104,7 @@ export default function AccountHero() {
 
   useEffect(() => {
     if (events) {
+      setNumberOfTransactions(events.length);
       const formattedEvents = events.map((event) => {
         console.log({ event });
         return {
@@ -131,6 +133,7 @@ export default function AccountHero() {
       setTransactionHistory((prevHistory) =>
         [{ type: "Buy", amount: purchasedAmount }, ...prevHistory].splice(-10)
       );
+      setNumberOfTransactions((prevNumber) => prevNumber + 1);
     }
   };
 
@@ -211,7 +214,7 @@ export default function AccountHero() {
                 <Stat>
                   <StatLabel fontSize="lg">Total Transactions</StatLabel>
                   <StatNumber fontSize="3xl">
-                    {transactionHistory.length}
+                    {numberOfTransactions}
                   </StatNumber>
                 </Stat>
               </SimpleGrid>
