@@ -34,7 +34,7 @@ export default function Features() {
       <Container maxW="container.xl">
         <VStack spacing={12} alignItems="flex-start">
           <Heading as="h2" size="2xl" fontWeight="bold">
-            Key Features
+            Why use a stablecoin?
           </Heading>
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={10}>
             <Feature

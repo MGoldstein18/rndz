@@ -81,12 +81,15 @@ export default function AccountHero() {
     params: [activeAccount?.address || ""],
   });
 
-  const { data: events, isPending: isPendingEvents, refetch: refetchEvents } = useContractEvents({
+  const {
+    data: events,
+    isPending: isPendingEvents,
+    refetch: refetchEvents,
+  } = useContractEvents({
     contract,
     events: [transferEvent()],
     blockRange: 16350620,
   });
-
 
   useEffect(() => {
     if (data) {
@@ -116,7 +119,6 @@ export default function AccountHero() {
     }
   }, [events]);
 
-
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
 
   const refreshData = (purchasedAmount?: string) => {
@@ -124,7 +126,13 @@ export default function AccountHero() {
     refetchEvents();
 
     if (purchasedAmount) {
-      setLocalBalance(prevBalance => prevBalance + parseFloat(purchasedAmount));
+      setLocalBalance(
+        (prevBalance) => prevBalance + parseFloat(purchasedAmount)
+      );
+      setTransactionHistory((prevHistory) => [
+        { type: "Buy", amount: purchasedAmount },
+        ...prevHistory,
+      ]);
     }
   };
 
