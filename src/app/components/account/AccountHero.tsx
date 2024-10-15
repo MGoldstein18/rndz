@@ -45,6 +45,7 @@ import { chain } from "@/app/utils/chain";
 import { transferEvent } from "thirdweb/extensions/erc20";
 import { shortenAddress } from "thirdweb/utils";
 import BuyModal from "./BuyModal";
+import SellModal from "./SellModal";
 
 const formatNumber = (num: bigint) => {
   return parseFloat(toTokens(num, 18)).toFixed(2).toString();
@@ -55,6 +56,7 @@ export default function AccountHero() {
   const [localBalance, setLocalBalance] = useState<number>(0);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
   const [numberOfTransactions, setNumberOfTransactions] = useState<number>(0);
+  // const [events, setEvents] = useState<any[]>([]);
 
   const toast = useToast();
 
@@ -82,14 +84,24 @@ export default function AccountHero() {
     params: [activeAccount?.address || ""],
   });
 
+  console.log({ address: activeAccount?.address });
+
   const {
     data: events,
-    isPending: isPendingEvents,
+    isPending: isEventsPending,
     refetch: refetchEvents,
   } = useContractEvents({
     contract,
-    events: [transferEvent()],
-    blockRange: 16350620,
+    events: [
+      transferEvent({
+        from: activeAccount?.address,
+        to: "0x0000000000000000000000000000000000000000",
+      }),
+      transferEvent({
+        from: "0x0000000000000000000000000000000000000000",
+        to: activeAccount?.address,
+      }),
+    ],
   });
 
   useEffect(() => {
@@ -121,6 +133,7 @@ export default function AccountHero() {
   }, [events]);
 
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
 
   const refreshData = (purchasedAmount?: string) => {
     refetch();
@@ -130,9 +143,14 @@ export default function AccountHero() {
       setLocalBalance(
         (prevBalance) => prevBalance + parseFloat(purchasedAmount)
       );
-      setTransactionHistory((prevHistory) =>
-        [{ type: "Buy", amount: purchasedAmount }, ...prevHistory].splice(-10)
-      );
+      const newArray: any[] = [...transactionHistory];
+      newArray.push({
+        type: purchasedAmount.startsWith("-") ? "Sell" : "Buy",
+        amount: purchasedAmount.includes("-")
+          ? purchasedAmount.slice(1)
+          : purchasedAmount,
+      });
+      setTransactionHistory(newArray.splice(-10));
       setNumberOfTransactions((prevNumber) => prevNumber + 1);
     }
   };
@@ -213,9 +231,7 @@ export default function AccountHero() {
                 </Stat>
                 <Stat>
                   <StatLabel fontSize="lg">Total Transactions</StatLabel>
-                  <StatNumber fontSize="3xl">
-                    {numberOfTransactions}
-                  </StatNumber>
+                  <StatNumber fontSize="3xl">{numberOfTransactions}</StatNumber>
                 </Stat>
               </SimpleGrid>
             </VStack>
@@ -235,6 +251,11 @@ export default function AccountHero() {
                 })}
                 wallets={[
                   inAppWallet({
+                    smartAccount: {
+                      chain: defineChain(84532),
+                      sponsorGas: true,
+                    },
+
                     auth: {
                       options: ["google", "apple", "facebook", "email"],
                     },
@@ -258,6 +279,7 @@ export default function AccountHero() {
                 borderColor="white"
                 _hover={{ bg: "whiteAlpha.200" }}
                 color="white"
+                onClick={() => setIsSellModalOpen(true)}
               >
                 Sell RNDZ
               </Button>
@@ -310,6 +332,12 @@ export default function AccountHero() {
             isOpen={isBuyModalOpen}
             onClose={() => setIsBuyModalOpen(false)}
             onPurchaseComplete={(amount) => refreshData(amount)}
+          />
+
+          <SellModal
+            isOpen={isSellModalOpen}
+            onClose={() => setIsSellModalOpen(false)}
+            onSellComplete={(amount) => refreshData(`-${amount}`)}
           />
         </VStack>
       </Container>

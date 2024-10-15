@@ -13,7 +13,7 @@ import {
   ButtonGroup,
   Stack,
 } from "@chakra-ui/react";
-import { createThirdwebClient } from "thirdweb";
+import { createThirdwebClient, defineChain } from "thirdweb";
 import {
   ConnectButton,
   darkTheme,
@@ -24,7 +24,7 @@ import {
 } from "thirdweb/react";
 import { chain } from "../utils/chain";
 import { inAppWallet, createWallet, Wallet } from "thirdweb/wallets";
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Hero() {
   const clientId = process.env.NEXT_PUBLIC_TEMPLATE_CLIENT_ID;
@@ -38,10 +38,6 @@ export default function Hero() {
   const activeAccount = useActiveAccount();
   const { disconnect } = useDisconnect();
   const wallet = useActiveWallet();
-
-  console.log({ wallet });
-
-  console.log({ activeAccount });
 
   return (
     <Box bg="black" color="white" py={20}>
@@ -76,15 +72,16 @@ export default function Hero() {
                   },
                 })}
                 wallets={[
-                  inAppWallet(
-                    // built-in auth methods
-                    {
-                      auth: {
-                        options: ["google", "apple", "facebook", "email"],
-                      },
-                    }
-                    // or bring your own auth endpoint
-                  ),
+                  inAppWallet({
+                    smartAccount: {
+                      chain: defineChain(84532),
+                      sponsorGas: true,
+                    },
+
+                    auth: {
+                      options: ["google", "apple", "facebook", "email"],
+                    },
+                  }),
                 ]}
                 chain={chain}
                 client={client}
