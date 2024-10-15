@@ -114,8 +114,7 @@ export default function AccountHero() {
         };
       });
 
-      console.log({ formattedEvents });
-      setTransactionHistory(formattedEvents);
+      setTransactionHistory(formattedEvents.splice(-10));
     }
   }, [events]);
 
@@ -129,10 +128,9 @@ export default function AccountHero() {
       setLocalBalance(
         (prevBalance) => prevBalance + parseFloat(purchasedAmount)
       );
-      setTransactionHistory((prevHistory) => [
-        { type: "Buy", amount: purchasedAmount },
-        ...prevHistory,
-      ]);
+      setTransactionHistory((prevHistory) =>
+        [{ type: "Buy", amount: purchasedAmount }, ...prevHistory].splice(-10)
+      );
     }
   };
 
