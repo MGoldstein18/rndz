@@ -34,20 +34,26 @@ import {
   darkTheme,
   useReadContract,
 } from "thirdweb/react";
-import { createThirdwebClient, defineChain, getContract } from "thirdweb";
+import {
+  createThirdwebClient,
+  defineChain,
+  getContract,
+  toTokens,
+} from "thirdweb";
 import { inAppWallet, createWallet, Wallet } from "thirdweb/wallets";
 import { chain } from "@/app/utils/chain";
 import { transferEvent } from "thirdweb/extensions/erc20";
 import { shortenAddress } from "thirdweb/utils";
 import BuyModal from "./BuyModal";
 
+const formatNumber = (num: bigint) => {
+  return parseFloat(toTokens(num, 18)).toFixed(2).toString();
+};
+
 export default function AccountHero() {
-  const [balance, setBalance] = useState(0);
-  const [transactionHistory, setTransactionHistory] = useState([
-    { amount: 100, type: "Buy" },
-    { amount: 50, type: "Sell" },
-    { amount: 200, type: "Buy" },
-  ]);
+  const [balance, setBalance] = useState("");
+  const [localBalance, setLocalBalance] = useState<number>(0);
+  const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
 
   const toast = useToast();
 
@@ -69,17 +75,26 @@ export default function AccountHero() {
     address: "0x3648C7281C6CD0418E9426e52f23a3948fE5ca23",
   });
 
-  const { data, isPending } = useReadContract({
+  const { data, isPending, refetch } = useReadContract({
     contract,
     method: "function balanceOf(address account) view returns (uint256)",
     params: [activeAccount?.address || ""],
   });
 
-  const { data: events, isPending: isPendingEvents } = useContractEvents({
+  const { data: events, isPending: isPendingEvents, refetch: refetchEvents } = useContractEvents({
     contract,
     events: [transferEvent()],
     blockRange: 16350620,
   });
+
+
+  useEffect(() => {
+    if (data) {
+      const formattedBalance = formatNumber(data);
+      setBalance(formattedBalance);
+      setLocalBalance(parseFloat(formattedBalance));
+    }
+  }, [data]);
 
   console.log({ events });
 
@@ -92,7 +107,7 @@ export default function AccountHero() {
             event.args.from === "0x0000000000000000000000000000000000000000"
               ? "Buy"
               : "Sell",
-          amount: Number(event.args.value),
+          amount: formatNumber(event.args.value),
         };
       });
 
@@ -101,13 +116,17 @@ export default function AccountHero() {
     }
   }, [events]);
 
-  useEffect(() => {
-    if (data) {
-      setBalance(Number(data));
-    }
-  }, [data]);
 
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+
+  const refreshData = (purchasedAmount?: string) => {
+    refetch();
+    refetchEvents();
+
+    if (purchasedAmount) {
+      setLocalBalance(prevBalance => prevBalance + parseFloat(purchasedAmount));
+    }
+  };
 
   return (
     <Box bg="black" color="white" minHeight="120vh" py={20}>
@@ -180,7 +199,7 @@ export default function AccountHero() {
                 <Stat>
                   <StatLabel fontSize="lg">Balance</StatLabel>
                   <StatNumber fontSize="3xl" color="green.400">
-                    R {balance}
+                    R {localBalance.toFixed(2)}
                   </StatNumber>
                 </Stat>
                 <Stat>
@@ -281,6 +300,7 @@ export default function AccountHero() {
           <BuyModal
             isOpen={isBuyModalOpen}
             onClose={() => setIsBuyModalOpen(false)}
+            onPurchaseComplete={(amount) => refreshData(amount)}
           />
         </VStack>
       </Container>
