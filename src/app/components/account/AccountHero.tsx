@@ -236,7 +236,7 @@ export default function AccountHero() {
           )}
 
           <Stack spacing={8} width="100%">
-            <HStack spacing={4} width="100%">
+            <Stack direction={["column", "row"]} spacing={4} width="100%">
               <ConnectButton
                 connectButton={{
                   label: "Sign In",
@@ -291,7 +291,7 @@ export default function AccountHero() {
               >
                 Sign Out
               </Button>
-            </HStack>
+            </Stack>
           </Stack>
 
           <Divider my={8} />
