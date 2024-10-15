@@ -14,8 +14,8 @@ import {
   Input,
   useToast,
 } from "@chakra-ui/react";
-import { useActiveAccount } from "thirdweb/react";
-import { prepareContractCall } from "thirdweb";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
+import { prepareContractCall, toTokens } from "thirdweb";
 import { useSendTransaction } from "thirdweb/react";
 import { getContract, defineChain, createThirdwebClient } from "thirdweb";
 import { toUnits } from "thirdweb/utils";
@@ -51,11 +51,27 @@ const SellModal: React.FC<SellModalProps> = ({
     address: "0x3648C7281C6CD0418E9426e52f23a3948fE5ca23",
   });
 
+  const {
+    data: balance,
+    isPending: isBalancePending,
+    refetch: refetchBalance,
+  } = useReadContract({
+    contract,
+    method: "function balanceOf(address account) view returns (uint256)",
+    params: [activeAccount?.address || ""],
+  });
+
   const handleSell = async () => {
-    if (!amount || isNaN(Number(amount))) {
+    refetchBalance();
+    if (
+      !amount ||
+      isNaN(Number(amount)) ||
+      !balance ||
+      Number(amount) > Number(toTokens(balance, 18))
+    ) {
       toast({
         title: "Invalid Amount",
-        description: "Please enter a valid number",
+        description: "Please enter a valid amount",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -64,51 +80,39 @@ const SellModal: React.FC<SellModalProps> = ({
     }
 
     setIsLoading(true);
-    try {
-      const amountInWei = toUnits(amount, 18);
-      const transaction = prepareContractCall({
-        contract,
-        method: "function burn(uint256 _amount)",
-        params: [amountInWei],
-      });
 
-      sendTransaction(transaction, {
-        onError: (error) => {
-          console.error(error);
-          toast({
-            title: "Sell Failed",
-            description: "There was an error processing your sell request",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-          });
-        },
-        onSuccess: (result) => {
-          console.log({ result });
-        },
-      });
+    const amountInWei = toUnits(amount, 18);
+    const transaction = prepareContractCall({
+      contract,
+      method: "function burn(uint256 _amount)",
+      params: [amountInWei],
+    });
 
-      toast({
-        title: "Sell Successful",
-        description: `You have successfully sold ${amount} RNDZ`,
-        status: "success",
-        duration: 2500,
-        isClosable: true,
-      });
+    sendTransaction(transaction, {
+      onError: (error) => {
+        console.error(error);
+        setIsLoading(false);
+        toast({
+          title: "Sell Failed",
+          description: "There was an error processing your sell request",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      },
+      onSuccess: (result) => {
+        console.log({ result });
         onSellComplete(amount);
-        onClose();
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Sell Failed",
-        description: "There was an error processing your sell request",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+        setIsLoading(false);
+        toast({
+          title: "Sell Successful",
+          description: `You have successfully sold ${amount} RNDZ`,
+          status: "success",
+          duration: 2500,
+          isClosable: true,
+        });
+      },
+    });
   };
 
   return (

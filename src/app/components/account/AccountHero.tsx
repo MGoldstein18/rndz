@@ -84,8 +84,6 @@ export default function AccountHero() {
     params: [activeAccount?.address || ""],
   });
 
-  console.log({ address: activeAccount?.address });
-
   const {
     data: events,
     isPending: isEventsPending,
@@ -102,6 +100,9 @@ export default function AccountHero() {
         to: activeAccount?.address,
       }),
     ],
+    blockRange: 16353211,
+    enabled: !!activeAccount?.address,
+    watch: true,
   });
 
   useEffect(() => {
@@ -112,13 +113,10 @@ export default function AccountHero() {
     }
   }, [data]);
 
-  console.log({ events });
-
   useEffect(() => {
     if (events) {
       setNumberOfTransactions(events.length);
       const formattedEvents = events.map((event) => {
-        console.log({ event });
         return {
           type:
             event.args.from === "0x0000000000000000000000000000000000000000"
